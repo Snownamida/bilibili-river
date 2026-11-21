@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>河道</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#fff; --fg:#16181c; --dim:#8a8f98; --line:#e8eaee;
+    --accent:#fb7299; --chip:#eceef2; --chip-on:#16181c; --chip-on-fg:#fff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#0f1114;--card:#171a1f;--fg:#e9ebef;--dim:#8b929c;--line:#242830;
+          --chip:#1e2228;--chip-on:#e9ebef;--chip-on-fg:#0f1114;}
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.45 -apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans CJK SC",sans-serif;
+       padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+  header{position:sticky;top:0;z-index:10;background:var(--bg);
+         padding:calc(10px + env(safe-area-inset-top)) 14px 8px}
+  .top{display:flex;align-items:baseline;gap:8px}
+  h1{font-size:20px;margin:0;letter-spacing:.02em}
+  .status{color:var(--dim);font-size:12px;margin-left:auto;text-align:right;line-height:1.35}
+  .status b{color:var(--fg);font-weight:600}
+  .status .err{color:#e5484d}
+  #refresh{border:0;background:var(--chip);color:var(--dim);width:30px;height:30px;
+           border-radius:50%;font-size:15px;line-height:1;flex:0 0 auto}
+  nav{display:flex;gap:6px;overflow-x:auto;padding:8px 14px 2px;scrollbar-width:none}
+  nav::-webkit-scrollbar{display:none}
+  .chip{border:0;background:var(--chip);color:var(--fg);border-radius:999px;
+        padding:6px 12px;font-size:13px;white-space:nowrap;flex:0 0 auto}
+  .chip.on{background:var(--chip-on);color:var(--chip-on-fg)}
+  .chip .n{opacity:.55;margin-left:4px;font-size:12px}
+  .bar{display:flex;gap:8px;align-items:center;padding:8px 14px 10px;flex-wrap:wrap}
+  .seg{display:flex;background:var(--chip);border-radius:9px;padding:2px;gap:2px}
+  .seg button{border:0;background:transparent;color:var(--dim);font-size:13px;
+              padding:5px 10px;border-radius:7px}
+  .seg button.on{background:var(--card);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .markall{margin-left:auto;border:0;background:transparent;color:var(--dim);font-size:12px;
+           text-decoration:underline;padding:4px}
+  main{padding:0 10px}
+  h2{font-size:12px;color:var(--dim);font-weight:600;margin:16px 4px 6px;letter-spacing:.06em}
+  .card{display:flex;gap:10px;background:var(--card);border-radius:12px;padding:8px;
+        margin-bottom:8px;position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;
+                border-radius:0 3px 3px 0;background:transparent}
+  .card.unread::before{background:var(--accent)}
+  .thumb{width:116px;height:66px;flex:0 0 auto;border-radius:8px;background:var(--chip);
+         object-fit:cover;position:relative;z-index:1}
+  .body{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
+  .title{font-size:14px;line-height:1.35;max-height:2.7em;overflow:hidden;
+         display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .card.unread .title{font-weight:600}
+  .meta{display:flex;align-items:center;gap:6px;color:var(--dim);font-size:12px;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:auto}
+  .tag{background:var(--chip);border-radius:5px;padding:1px 5px;font-size:11px;color:var(--dim)}
+  .empty{color:var(--dim);text-align:center;padding:60px 20px;font-size:14px}
+  .chip.pick{border:1px dashed var(--line);background:transparent;color:var(--dim)}
+  #sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end}
+  #sheet[hidden]{display:none}
+  .mask{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+  .sheet{position:relative;width:100%;max-height:78vh;background:var(--card);
+         border-radius:16px 16px 0 0;display:flex;flex-direction:column;
+         padding-bottom:env(safe-area-inset-bottom)}
+  .sheet h3{margin:16px 16px 4px;font-size:16px}
+  .hint{color:var(--dim);font-size:12px;margin:0 16px 8px;line-height:1.5}
+  .sheet-list{overflow-y:auto;padding:0 8px 8px;flex:1;min-height:80px}
+  .grow{display:flex;align-items:center;gap:10px;padding:11px 10px;border-radius:10px}
+  .grow:active{background:var(--chip)}
+  .grow input{width:20px;height:20px;accent-color:var(--accent);flex:0 0 auto}
+  .grow .n{margin-left:auto;color:var(--dim);font-size:12px}
+  .sheet-f{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--line)}
+  .sheet-f button{flex:1;border:0;border-radius:10px;padding:12px;font-size:15px}
+  #sheet-save{background:var(--accent);color:#fff}
+  #sheet-cancel{background:var(--chip);color:var(--fg)}
+  #toast{position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));
+         transform:translateX(-50%);background:rgba(20,22,26,.93);color:#fff;font-size:13px;
+         padding:9px 14px;border-radius:10px;opacity:0;pointer-events:none;
+         transition:opacity .2s;z-index:60;max-width:80vw;text-align:center}
+  #toast.show{opacity:1}
+  .banner{margin:6px 14px 0;padding:8px 10px;border-radius:8px;background:#fff1f2;
+          color:#b42318;font-size:12px}
+  @media (prefers-color-scheme: dark){.banner{background:#2a1518;color:#ff9ba3}}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1>河道</h1>
+    <div class="status" id="status">加载中…</div>
+    <button id="refresh" title="立刻抓取">↻</button>
+  </div>
+</header>
+<div id="banner"></div>
+<nav id="groups"></nav>
+<div class="bar">
+  <div class="seg" id="scope">
+    <button data-days="1">24 小时</button>
+    <button data-days="7" class="on">7 天</button>
+    <button data-days="30">30 天</button>
+  </div>
+  <div class="seg" id="mode">
+    <button data-unseen="0" class="on">全部</button>
+    <button data-unseen="1">未看</button>
+  </div>
+  <button class="markall" id="markall" hidden>全部标为已看</button>
+</div>
+<main id="list"></main>
+
+<div id="sheet" hidden>
+  <div class="mask" data-close="1"></div>
+  <div class="sheet">
+    <h3>选择要爬的分组</h3>
+    <p class="hint" id="sheet-hint">只有勾选的分组里的 UP 会进河道。B 站里改分组不用管，这里只选"哪几组"。</p>
+    <div class="sheet-list" id="sheet-list"></div>
+    <div class="sheet-f">
+      <button id="sheet-cancel">取消</button>
+      <button id="sheet-save">保存并抓取</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const state = {days: 7, grp: "all", unseen: 0, data: null};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function bucket(ts){
+  const d = new Date(ts * 1000), n = new Date();
+  const day = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = (day(n) - day(d)) / 86400000;
+  if (diff <= 0) return "今天";
+  if (diff === 1) return "昨天";
+  if (diff < 7) return "更早";
+  return "更早";
+}
+function hm(ts){
+  const d = new Date(ts * 1000), n = new Date();
+  const p = x => String(x).padStart(2, "0");
+  const sameDay = d.toDateString() === n.toDateString();
+  return sameDay ? `${p(d.getHours())}:${p(d.getMinutes())}` : `${d.getMonth()+1}-${p(d.getDate())}`;
+}
+function dur(s){
+  if (!s) return "";
+  const m = Math.floor(s / 60), sec = s % 60;
+  return s >= 3600 ? `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}:${String(sec).padStart(2,"0")}`
+                   : `${m}:${String(sec).padStart(2,"0")}`;
+}
+function ago(ts){
+  const s = Math.max(0, Math.round(Date.now()/1000 - ts));
+  if (s < 60) return "刚刚";
+  if (s < 3600) return `${Math.floor(s/60)} 分钟前`;
+  if (s < 86400) return `${Math.floor(s/3600)} 小时前`;
+  return `${Math.floor(s/86400)} 天前`;
+}
+
+function renderGroups(){
+  const gs = state.data.groups, cnt = state.data.counts;
+  const total = state.data.items.length;
+  let html = `<button class="chip ${state.grp==="all"?"on":""}" data-grp="all">全部<span class="n">${total}</span></button>`;
+  for (const g of gs){
+    html += `<button class="chip ${state.grp===g?"on":""}" data-grp="${esc(g)}">${esc(g)}<span class="n">${cnt[g]||0}</span></button>`;
+  }
+  html += `<button class="chip pick" id="pick">＋ 分组</button>`;
+  $("#groups").innerHTML = html;
+  $("#groups").querySelectorAll(".chip[data-grp]").forEach(el => {
+    el.onclick = () => { state.grp = el.dataset.grp; load(); };
+  });
+  $("#pick").onclick = openSheet;
+}
+
+function render(){
+  const items = state.data.items;
+  const unread = state.data.unread;
+  $("#markall").hidden = unread === 0;
+  const run = state.data.run;
+  let s = "";
+  if (run){
+    s = `${ago(run.ts)}更新 · ${run.mids}/${run.total_mids || run.mids} 个 UP · 新增 <b>${run.added}</b>`;
+    if (run.errors && run.errors.length) s += ` · <span class="err">${run.errors.length} 个错误</span>`;
+  }
+  $("#status").innerHTML = s || "还没抓过，点一下刷新";
+  $("#banner").innerHTML = (run && run.errors && run.errors.length)
+    ? `<div class="banner">${esc(run.errors[0].where)}: ${esc(run.errors[0].msg)}${run.errors.length>1?`（共 ${run.errors.length} 条）`:""}</div>` : "";
+
+  if (!items.length){
+    $("#list").innerHTML = `<div class="empty">这个窗口里没有投稿<br><span style="font-size:12px">换个分组或把窗口拉到 30 天</span></div>`;
+    return;
+  }
+  let html = "", last = "";
+  for (const it of items){
+    const b = bucket(it.pubdate);
+    if (b !== last){ html += `<h2>${b}</h2>`; last = b; }
+    html += `
+      <div class="card ${it.seen?"":"unread"}" data-bvid="${esc(it.bvid)}" data-url="https://www.bilibili.com/video/${esc(it.bvid)}">
+        <img class="thumb" loading="lazy" src="${esc(it.cover)}" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">
+        <div class="body">
+          <div class="title">${esc(it.title)}</div>
+          <div class="meta">
+            <span>${esc(it.uname||"")}</span><span>·</span><span>${hm(it.pubdate)}</span>
+            ${it.duration?`<span>·</span><span>${dur(it.duration)}</span>`:""}
+            ${it.grps && it.grps[0]?`<span class="tag">${esc(it.grps[0])}</span>`:""}
+          </div>
+        </div>
+      </div>`;
+  }
+  $("#list").innerHTML = html;
+  $("#list").querySelectorAll(".card").forEach(el => {
+    el.onclick = () => {
+      const bvid = el.dataset.bvid;
+      markSeen(bvid, el);
+      window.open(el.dataset.url, "_blank", "noopener");
+    };
+  });
+}
+
+async function markSeen(bvid, el){
+  el.classList.remove("unread");
+  state.data.unread = Math.max(0, state.data.unread - 1);
+  $("#markall").hidden = state.data.unread === 0;
+  try {
+    await fetch("/api/seen", {method:"POST", headers:{"Content-Type":"application/json"},
+                              body: JSON.stringify({bvid})});
+  } catch(e){}
+}
+
+async function load(){
+  $("#list").innerHTML = `<div class="empty">加载中…</div>`;
+  const q = new URLSearchParams({days: state.days, grp: state.grp, unseen: state.unseen});
+  try {
+    const r = await fetch("/api/items?" + q);
+    state.data = await r.json();
+  } catch(e){
+    $("#list").innerHTML = `<div class="empty">连不上服务器</div>`; return;
+  }
+  renderGroups();
+  render();
+}
+
+$("#scope").querySelectorAll("button").forEach(b => b.onclick = () => {
+  state.days = +b.dataset.days;
+  $("#scope").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+  load();
+});
+$("#mode").querySelectorAll("button").forEach(b => b.onclick = () => {
+  state.unseen = +b.dataset.unseen;
+  $("#mode").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+  load();
+});
+$("#markall").onclick = async () => {
+  await fetch("/api/seen", {method:"POST", headers:{"Content-Type":"application/json"},
+                            body: JSON.stringify({days: state.days})});
+  load();
+};
+$("#status").onclick = doRefresh;
+$("#refresh").onclick = doRefresh;
+async function doRefresh(){
+  const before = state.data && state.data.run ? state.data.run.ts : 0;
+  $("#status").textContent = "抓取中…";
+  await fetch("/api/refresh", {method:"POST"});
+  for (let i = 0; i < 40; i++){
+    await new Promise(r => setTimeout(r, 3000));
+    const s = await (await fetch("/api/status")).json();
+    if (s.ts && s.ts !== before){ break; }
+  }
+  load();
+}
+async function openSheet(){
+  $("#sheet").hidden = false;
+  $("#sheet-list").innerHTML = '<p class="hint">加载中…</p>';
+  let d;
+  try { d = await (await fetch("/api/groups")).json(); }
+  catch(e){ $("#sheet-list").innerHTML = '<p class="hint">连不上服务器</p>'; return; }
+  if (!d.groups || !d.groups.length){
+    $("#sheet-list").innerHTML = '<p class="hint">还没有分组缓存。先让服务抓一轮（右上角 ↻），再来勾。</p>';
+    return;
+  }
+  const sel = new Set(d.selected || []);
+  $("#sheet-list").innerHTML = d.groups.map(g => `
+    <label class="grow">
+      <input type="checkbox" value="${esc(g.name)}" ${sel.has(g.name)?"checked":""}>
+      <span>${esc(g.name)}</span><span class="n">${g.count ?? ""}</span>
+    </label>`).join("");
+}
+function toast(t){
+  const el = $("#toast");
+  el.textContent = t; el.classList.add("show");
+  clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove("show"), 2400);
+}
+$("#sheet-cancel").onclick = () => { $("#sheet").hidden = true; };
+$("#sheet").querySelector(".mask").onclick = () => { $("#sheet").hidden = true; };
+$("#sheet-save").onclick = async () => {
+  const names = [...$("#sheet-list").querySelectorAll("input:checked")].map(x => x.value);
+  if (!names.length){ toast("至少选一个分组"); return; }
+  const r = await fetch("/api/groups", {method:"POST", headers:{"Content-Type":"application/json"},
+                                        body: JSON.stringify({groups: names})});
+  const d = await r.json();
+  if (!d.ok){ toast(d.msg || "保存失败"); return; }
+  $("#sheet").hidden = true;
+  toast("已保存，正在按新分组抓取…");
+  fetch("/api/refresh", {method:"POST"});
+  setTimeout(load, 1500);
+};
+load();
+</script>
+</body>
+</html>

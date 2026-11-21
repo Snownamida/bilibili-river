@@ -116,8 +116,8 @@
     <button data-days="30">30 天</button>
   </div>
   <div class="seg" id="mode">
-    <button data-unseen="0" class="on">全部</button>
-    <button data-unseen="1">未看</button>
+    <button data-unseen="0">全部</button>
+    <button data-unseen="1" class="on">未看</button>
   </div>
   <button class="markall" id="markall" hidden>全部标为已看</button>
 </div>
@@ -147,7 +147,7 @@
 <div id="toast"></div>
 
 <script>
-const state = {days: 7, grp: null, unseen: 0, data: null};
+const state = {days: 7, grp: null, unseen: 1, data: null};
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 

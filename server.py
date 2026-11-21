@@ -302,7 +302,10 @@ class Handler(BaseHTTPRequestHandler):
             c = groups_cache()
             return self._json({"groups": c.get("groups", []),
                                "ts": c.get("ts", 0),
-                               "selected": config.selected_groups()})
+                               "selected": config.selected_groups(),
+                               "default_grp": (config.DEFAULT_GRP
+                                               if config.DEFAULT_GRP in config.selected_groups()
+                                               else "all")})
         if u.path == "/feed.xml":
             return self._send(200, feed_xml(), "application/atom+xml; charset=utf-8")
         return self._send(404, "not found")

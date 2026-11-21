@@ -298,11 +298,14 @@ async function markSeen(bvid, el){
 
 async function load(){
   $("#list").innerHTML = `<div class="empty">加载中…</div>`;
+  if (state.grp === null){
+    try { state.grp = (await (await fetch("/api/groups")).json()).default_grp || "all"; }
+    catch(e){ state.grp = "all"; }
+  }
   const q = new URLSearchParams({days: state.days, grp: state.grp, unseen: state.unseen});
   try {
     const r = await fetch("/api/items?" + q);
     state.data = await r.json();
-    if (state.grp === null) state.grp = state.data.default_grp || "all";
   } catch(e){
     $("#list").innerHTML = `<div class="empty">连不上服务器</div>`; return;
   }

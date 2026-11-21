@@ -224,6 +224,15 @@ def do_import(raw):
     return man
 
 
+def shown_groups():
+    """页面上的分组顺序：默认分组排最前面。"""
+    gs = config.selected_groups()
+    d = config.DEFAULT_GRP
+    if d in gs:
+        return [d] + [g for g in gs if g != d]
+    return gs
+
+
 def groups_cache():
     try:
         with open(config.GROUPS_FILE, encoding="utf-8") as f:
@@ -276,7 +285,7 @@ class Handler(BaseHTTPRequestHandler):
             per, total, unread = summary(days, unseen)
             return self._json({
                 "items": rows,
-                "groups": config.selected_groups(),
+                "groups": shown_groups(),
                 "default_grp": (config.DEFAULT_GRP if config.DEFAULT_GRP in config.selected_groups() else "all"),
                 "counts": per,
                 "total": total,
@@ -302,7 +311,7 @@ class Handler(BaseHTTPRequestHandler):
             c = groups_cache()
             return self._json({"groups": c.get("groups", []),
                                "ts": c.get("ts", 0),
-                               "selected": config.selected_groups(),
+                               "selected": shown_groups(),
                                "default_grp": (config.DEFAULT_GRP
                                                if config.DEFAULT_GRP in config.selected_groups()
                                                else "all")})

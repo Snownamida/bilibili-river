@@ -201,6 +201,8 @@ function render(){
   let s = "";
   if (run){
     s = `${ago(run.ts)}更新 · ${run.mids}/${run.total_mids || run.mids} 个 UP · 新增 <b>${run.added}</b>`;
+    const all = state.data.total_all;
+    if (state.unseen && all != null) s += `<br>未看 ${state.data.total} · 共 ${all} 条`;
     if (run.errors && run.errors.length) s += ` · <span class="err">${run.errors.length} 个错误</span>`;
   }
   $("#status").innerHTML = s || "还没抓过，点一下刷新";

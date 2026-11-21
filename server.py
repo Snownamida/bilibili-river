@@ -67,12 +67,19 @@ def items(days=7, grp="all", unseen=False):
 def summary(days, unseen):
     """分组计数和总数要独立算，不能拿筛过的结果集去数（否则别的组永远是 0）。"""
     since = int(time.time()) - int(days) * 86400
-    where = "v.pubdate >= ? AND v.hidden = 0" + (" AND v.seen = 0" if unseen else "")
+    base = "v.pubdate >= ? AND v.hidden = 0"
+    where = base + (" AND v.seen = 0" if unseen else "")
     con = db()
     try:
         total = con.execute(
             f"SELECT COUNT(DISTINCT v.bvid) FROM videos v JOIN members m ON m.mid = v.mid "
             f"WHERE {where}", (since,)).fetchone()[0]
+        total_all = con.execute(
+            f"SELECT COUNT(DISTINCT v.bvid) FROM videos v JOIN members m ON m.mid = v.mid "
+            f"WHERE {base}", (since,)).fetchone()[0]
+        per_all = dict(con.execute(
+            f"SELECT m.grp, COUNT(DISTINCT v.bvid) FROM videos v JOIN members m ON m.mid = v.mid "
+            f"WHERE {base} GROUP BY m.grp", (since,)).fetchall())
         per = dict(con.execute(
             f"SELECT m.grp, COUNT(DISTINCT v.bvid) FROM videos v JOIN members m ON m.mid = v.mid "
             f"WHERE {where} GROUP BY m.grp", (since,)).fetchall())
@@ -81,7 +88,7 @@ def summary(days, unseen):
             "WHERE v.pubdate >= ? AND v.seen = 0 AND v.hidden = 0", (since,)).fetchone()[0]
     finally:
         con.close()
-    return per, total, unread
+    return per, per_all, total, total_all, unread
 
 
 def set_hidden(bvid, hidden=1):
@@ -291,13 +298,17 @@ class Handler(BaseHTTPRequestHandler):
             grp = q.get("grp", ["all"])[0]
             unseen = q.get("unseen", ["0"])[0] == "1"
             rows = items(days, grp, unseen)
-            per, total, unread = summary(days, unseen)
+            per, per_all, total, total_all, unread = summary(days, unseen)
+            if grp != "all":
+                total = per.get(grp, 0)
+                total_all = per_all.get(grp, 0)
             return self._json({
                 "items": rows,
                 "groups": shown_groups(),
                 "default_grp": (config.DEFAULT_GRP if config.DEFAULT_GRP in config.selected_groups() else "all"),
                 "counts": per,
                 "total": total,
+                "total_all": total_all,
                 "unread": unread,
                 "run": read_run(),
             })

@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS videos(
     duration   INTEGER,
     tname      TEXT,
     first_seen INTEGER,
-    seen       INTEGER DEFAULT 0
+    seen       INTEGER DEFAULT 0,
+    hidden     INTEGER DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_videos_pub ON videos(pubdate DESC);
 CREATE TABLE IF NOT EXISTS members(

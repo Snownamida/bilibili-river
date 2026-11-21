@@ -45,7 +45,7 @@ def items(days=7, grp="all", unseen=False):
     sql = ["SELECT v.bvid, v.aid, v.title, v.pubdate, v.cover, v.duration, v.tname, v.seen,",
            "       v.mid, m.uname, GROUP_CONCAT(DISTINCT m.grp) AS grps",
            "FROM videos v JOIN members m ON m.mid = v.mid",
-           "WHERE v.pubdate >= ?"]
+           "WHERE v.pubdate >= ? AND v.hidden = 0"]
     args = [since]
     if grp and grp != "all":
         sql.append("AND m.grp = ?")
@@ -82,6 +82,15 @@ def summary(days, unseen):
     finally:
         con.close()
     return per, total, unread
+
+
+def set_hidden(bvid, hidden=1):
+    con = db()
+    try:
+        con.execute("UPDATE videos SET hidden=? WHERE bvid=?", (1 if hidden else 0, bvid))
+        con.commit()
+    finally:
+        con.close()
 
 
 def mark_seen(bvid=None, days=None, seen=1):
@@ -333,6 +342,12 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(raw or b"{}")
         except Exception:
             body = {}
+        if u.path == "/api/hide":
+            bvid = body.get("bvid")
+            if not bvid:
+                return self._json({"ok": False, "msg": "缺 bvid"}, 400)
+            set_hidden(bvid, int(body.get("hidden", 1)))
+            return self._json({"ok": True})
         if u.path == "/api/seen":
             days = body.get("days")
             seen = int(body.get("seen", 1))

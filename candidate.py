@@ -3,6 +3,7 @@
 
 判断标准不是内容分类，而是行为：这个 UP 最近发的视频，你点开了多大比例。
 """
+import collections
 import json
 import os
 import threading
@@ -189,7 +190,7 @@ def apply_group(mids, name="常看", batch=20):
         g = {"tagid": d.get("tagid"), "name": name}
         created = True
     mids = [int(m) for m in mids]
-    # 先查每个人现在在哪些分组，moveUsers 要求 beforeTagids 准确
+    # addUsers 是"把分组设成这一组"，不是叠加；所以先查现有分组，再补上目标组
     rel = {}
     for i in range(0, len(mids), 50):
         try:
@@ -198,28 +199,24 @@ def apply_group(mids, name="常看", batch=20):
             pass
         time.sleep(1.0)
 
-    buckets = {}
-    skipped = 0          # 已经在这个组里
-    in_other = 0         # 已在别的自定义分组：B 站分组互斥，默认不动他们
+    buckets = collections.defaultdict(list)
+    skipped = 0
     for mid in mids:
         tags = (rel.get(str(mid)) or {}).get("tag") or []
         if g["tagid"] in tags:
             skipped += 1
             continue
-        if tags:
-            in_other += 1
-            continue
-        buckets.setdefault("0", []).append(mid)
+        want = tuple(sorted({int(t) for t in tags} | {g["tagid"]}))
+        buckets[want].append(mid)
 
     moved = 0
-    for before, group in buckets.items():
+    for want, group in buckets.items():
         for i in range(0, len(group), batch):
             chunk = group[i:i + batch]
-            b.move_users(chunk, before, g["tagid"])
+            b.add_users(chunk, list(want))
             moved += len(chunk)
             time.sleep(1.5)
-    return {"tagid": g["tagid"], "created": created, "moved": moved,
-            "skipped": skipped, "in_other": in_other}
+    return {"tagid": g["tagid"], "created": created, "moved": moved, "skipped": skipped}
 
 
 def run(days=180, window_days=90, max_ups=60):

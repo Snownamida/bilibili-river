@@ -217,6 +217,15 @@ class Bili:
         return self._post("https://api.bilibili.com/x/relation/tag/create",
                           {"tag": name, "csrf": self.csrf})
 
+    def add_users(self, mids, tagids):
+        """把用户加进分组（可多个），不清除已有分组；tagids=0 表示移回默认分组。"""
+        if not self.csrf:
+            raise BiliError("cookie 里没有 bili_jct，不能写")
+        return self._post("https://api.bilibili.com/x/relation/tags/addUsers",
+                          {"fids": ",".join(str(m) for m in mids),
+                           "tagids": ",".join(str(t) for t in ([tagids] if isinstance(tagids, int) else tagids)),
+                           "csrf": self.csrf})
+
     def move_users(self, mids, before_tagids, after_tagid):
         """把用户从 before_tagids（原分组，0=默认）移动到 after_tagid。"""
         if not self.csrf:

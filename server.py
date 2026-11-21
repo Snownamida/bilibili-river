@@ -78,7 +78,7 @@ def summary(days, unseen):
             f"WHERE {where} GROUP BY m.grp", (since,)).fetchall())
         unread = con.execute(
             "SELECT COUNT(DISTINCT v.bvid) FROM videos v JOIN members m ON m.mid = v.mid "
-            "WHERE v.pubdate >= ? AND v.seen = 0", (since,)).fetchone()[0]
+            "WHERE v.pubdate >= ? AND v.seen = 0 AND v.hidden = 0", (since,)).fetchone()[0]
     finally:
         con.close()
     return per, total, unread
@@ -287,7 +287,7 @@ class Handler(BaseHTTPRequestHandler):
             with open(os.path.join(config.ROOT, "index.html"), encoding="utf-8") as f:
                 return self._send(200, f.read())
         if u.path == "/api/items":
-            days = _int(q.get("days", ["7"])[0], 7, 1, 90)
+            days = _int(q.get("days", ["7"])[0], 7, 1, 36500)
             grp = q.get("grp", ["all"])[0]
             unseen = q.get("unseen", ["0"])[0] == "1"
             rows = items(days, grp, unseen)

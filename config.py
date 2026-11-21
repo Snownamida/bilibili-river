@@ -36,7 +36,7 @@ PAUSE_EVERY = 10        # 每查 10 个 UP 多歇一会儿
 PAUSE_SECONDS = 25
 COOLDOWN = 1800         # 连续失败后退避多久
 
-KEEP_DAYS = 30          # 河道只保留最近这么多天的投稿，更早的入库时就丢掉
+FIRST_UNREAD_DAYS = 14  # 第一次抓某个 UP 时，这么久以内的投稿算未看；更早的只当档案
 
 
 def selected_groups():

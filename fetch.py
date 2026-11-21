@@ -199,10 +199,10 @@ def run(force=False):
     mids = [r[0] for r in con.execute(q, args)]
 
     now = int(time.time())
-    cutoff = now - config.KEEP_DAYS * 86400
     fail_streak = 0
     for i, mid in enumerate(mids, 1):
-        n = cur.execute("SELECT COUNT(*) FROM videos WHERE mid=?", (mid,)).fetchone()[0]
+        row = cur.execute("SELECT COUNT(*), MAX(pubdate) FROM videos WHERE mid=?", (mid,)).fetchone()
+        n, max_pub = row[0], row[1]
         ps = config.PS if n else config.BACKFILL_PS
         vids, err = fetch_one(b, mid, ps)
         if vids is None:
@@ -225,10 +225,13 @@ def run(force=False):
         fail_streak = 0
         touch_state(cur, mid)
         for v in vids:
-            if not v["bvid"] or v["pubdate"] < cutoff:
+            if not v["bvid"]:
                 continue
-            # 新入库一律未看；看没看过交给观看历史去标
-            seen = 0
+            # 比库里最新的还新 = 这次新发的；第一次抓只看最近两周
+            if max_pub:
+                seen = 0 if v["pubdate"] > max_pub else 1
+            else:
+                seen = 0 if v["pubdate"] >= now - config.FIRST_UNREAD_DAYS * 86400 else 1
             cur.execute(
                 "INSERT OR IGNORE INTO videos"
                 "(bvid, aid, mid, title, pubdate, cover, duration, tname, first_seen, seen)"
@@ -246,8 +249,6 @@ def run(force=False):
         if config.PAUSE_EVERY and i % config.PAUSE_EVERY == 0 and i < len(mids):
             time.sleep(config.PAUSE_SECONDS)
 
-    # 清掉超过保留期的旧投稿
-    cur.execute("DELETE FROM videos WHERE pubdate < ?", (now - config.KEEP_DAYS * 86400,))
     # 抓完顺手用观看历史把看过的标掉
     cur.execute("UPDATE videos SET seen=1 WHERE seen=0 AND bvid IN (SELECT bvid FROM history WHERE bvid IS NOT NULL)")
     con.commit()

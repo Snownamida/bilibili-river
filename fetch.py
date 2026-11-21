@@ -198,6 +198,7 @@ def run(force=False):
     mids = [r[0] for r in con.execute(q, args)]
 
     now = int(time.time())
+    cutoff = now - config.KEEP_DAYS * 86400
     fail_streak = 0
     for i, mid in enumerate(mids, 1):
         n = cur.execute("SELECT COUNT(*) FROM videos WHERE mid=?", (mid,)).fetchone()[0]
@@ -223,10 +224,10 @@ def run(force=False):
         fail_streak = 0
         touch_state(cur, mid)
         for v in vids:
-            if not v["bvid"]:
+            if not v["bvid"] or v["pubdate"] < cutoff:
                 continue
-            # 首次入库：48 小时以外的直接算已读，不然第一次打开满屏红点
-            seen = 0 if now - v["pubdate"] <= config.UNREAD_GRACE else 1
+            # 新入库一律未看；看没看过交给观看历史去标
+            seen = 0
             cur.execute(
                 "INSERT OR IGNORE INTO videos"
                 "(bvid, aid, mid, title, pubdate, cover, duration, tname, first_seen, seen)"
@@ -244,6 +245,8 @@ def run(force=False):
         if config.PAUSE_EVERY and i % config.PAUSE_EVERY == 0 and i < len(mids):
             time.sleep(config.PAUSE_SECONDS)
 
+    # 清掉超过保留期的旧投稿
+    cur.execute("DELETE FROM videos WHERE pubdate < ?", (now - config.KEEP_DAYS * 86400,))
     # 抓完顺手用观看历史把看过的标掉
     cur.execute("UPDATE videos SET seen=1 WHERE seen=0 AND bvid IN (SELECT bvid FROM history WHERE bvid IS NOT NULL)")
     con.commit()

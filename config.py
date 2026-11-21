@@ -36,8 +36,7 @@ PAUSE_EVERY = 10        # 每查 10 个 UP 多歇一会儿
 PAUSE_SECONDS = 25
 COOLDOWN = 1800         # 连续失败后退避多久
 
-WINDOW_DAYS = 7         # 页面默认只看最近 7 天
-UNREAD_GRACE = 48 * 3600  # 首次入库时，早于这个时间的直接算已读
+KEEP_DAYS = 30          # 河道只保留最近这么多天的投稿，更早的入库时就丢掉
 
 
 def selected_groups():

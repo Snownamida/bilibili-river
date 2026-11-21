@@ -188,6 +188,45 @@ class Bili:
                       referer="https://space.bilibili.com/")
         return d or {}
 
+    def _post(self, url, data, referer="https://space.bilibili.com/"):
+        body = urllib.parse.urlencode(data).encode()
+        req = urllib.request.Request(url, data=body, headers={
+            "User-Agent": UA, "Referer": referer,
+            "Cookie": "; ".join(f"{k}={v}" for k, v in self.cookie.items()),
+            "Content-Type": "application/x-www-form-urlencoded",
+        })
+        self.calls += 1
+        try:
+            with urllib.request.urlopen(req, timeout=20) as r:
+                resp = json.loads(r.read().decode("utf-8", "replace"))
+        except urllib.error.HTTPError as e:
+            raise BiliError(f"HTTP {e.code} 被拦", code=e.code) from None
+        except Exception as e:
+            raise BiliError(f"网络错误：{e!r}") from None
+        if resp.get("code") != 0:
+            raise BiliError(f"{resp.get('message')} (code={resp.get('code')})", code=resp.get("code"))
+        return resp.get("data") or {}
+
+    @property
+    def csrf(self):
+        return self.cookie.get("bili_jct")
+
+    def create_tag(self, name):
+        if not self.csrf:
+            raise BiliError("cookie 里没有 bili_jct，不能写")
+        return self._post("https://api.bilibili.com/x/relation/tag/create",
+                          {"tag": name, "csrf": self.csrf})
+
+    def move_users(self, mids, before_tagids, after_tagid):
+        """把用户从 before_tagids（原分组，0=默认）移动到 after_tagid。"""
+        if not self.csrf:
+            raise BiliError("cookie 里没有 bili_jct，不能写")
+        return self._post("https://api.bilibili.com/x/relation/tags/moveUsers",
+                          {"fids": ",".join(str(m) for m in mids),
+                           "beforeTagids": before_tagids,
+                           "afterTagids": after_tagid,
+                           "csrf": self.csrf})
+
     def _app_get(self, path, params):
         p = dict(params)
         p.update({"appkey": APP_KEY, "ts": int(time.time()),

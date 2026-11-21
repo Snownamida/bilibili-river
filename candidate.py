@@ -177,6 +177,51 @@ def build(window_days=90, max_ups=60, progress=status):
     return out
 
 
+def apply_group(mids, name="常看", batch=20):
+    """把 mids 加进名为 name 的分组（没有就建）。只加不删，原有分组不动。"""
+    b = Bili(config.COOKIE)
+    if not b.csrf:
+        raise BiliError("cookie 里没有 bili_jct，先补上才能写回")
+    g = next((x for x in b.groups() if x["name"] == name), None)
+    created = False
+    if not g:
+        d = b.create_tag(name)
+        g = {"tagid": d.get("tagid"), "name": name}
+        created = True
+    mids = [int(m) for m in mids]
+    # 先查每个人现在在哪些分组，moveUsers 要求 beforeTagids 准确
+    rel = {}
+    for i in range(0, len(mids), 50):
+        try:
+            rel.update(b.relations(mids[i:i + 50]))
+        except BiliError:
+            pass
+        time.sleep(1.0)
+
+    buckets = {}
+    skipped = 0          # 已经在这个组里
+    in_other = 0         # 已在别的自定义分组：B 站分组互斥，默认不动他们
+    for mid in mids:
+        tags = (rel.get(str(mid)) or {}).get("tag") or []
+        if g["tagid"] in tags:
+            skipped += 1
+            continue
+        if tags:
+            in_other += 1
+            continue
+        buckets.setdefault("0", []).append(mid)
+
+    moved = 0
+    for before, group in buckets.items():
+        for i in range(0, len(group), batch):
+            chunk = group[i:i + batch]
+            b.move_users(chunk, before, g["tagid"])
+            moved += len(chunk)
+            time.sleep(1.5)
+    return {"tagid": g["tagid"], "created": created, "moved": moved,
+            "skipped": skipped, "in_other": in_other}
+
+
 def run(days=180, window_days=90, max_ups=60):
     if not LOCK.acquire(blocking=False):
         return False

@@ -68,7 +68,8 @@
 <footer>
   <span class="n" id="picked">已选 0</span>
   <button class="btn" id="copy">复制名单</button>
-  <button class="primary" id="csv">导出 CSV</button>
+  <button class="btn" id="csv">CSV</button>
+  <button class="primary" id="apply">加入组</button>
 </footer>
 
 <script>
@@ -157,6 +158,26 @@ $("#copy").onclick = async () => {
   if (!names.length) return alert("先勾几个");
   try { await navigator.clipboard.writeText(names.join("\n")); alert(`已复制 ${names.length} 个名字`); }
   catch(e){ prompt("手动复制：", names.join("\n")); }
+};
+$("#apply").onclick = async () => {
+  const mids = [...picked];
+  if (!mids.length) return alert("先勾几个");
+  const tag = prompt("加入哪个分组？", "常看");
+  if (!tag) return;
+  if (!confirm(`把 ${mids.length} 个 UP 加入「${tag}」组？只加不删，原来的分组保留。`)) return;
+  $("#apply").textContent = "提交中…";
+  try {
+    const r = await fetch("/api/group/apply", {method:"POST", headers:{"Content-Type":"application/json"},
+                                               body: JSON.stringify({mids, tag})});
+    const d = await r.json();
+    if (!d.ok) return alert(d.msg || "失败");
+    alert(`已加入 ${d.moved} 个${d.created ? "（新建了分组）" : ""}` +
+          (d.in_other ? `\n${d.in_other} 个已在别的分组，没动（B 站分组互斥）` : "") +
+          (d.skipped ? `\n${d.skipped} 个本来就在这个组` : ""));
+    picked.clear(); render();
+  } finally {
+    $("#apply").textContent = "加入组";
+  }
 };
 $("#csv").onclick = () => {
   const rows = [["名字","mid","看了","投稿数","观看率","完播率","最近观看","现有分组"]];

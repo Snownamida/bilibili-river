@@ -20,6 +20,7 @@ from xml.sax.saxutils import escape
 
 import candidate
 import config
+from bili import BiliError
 import fetch
 
 _fetch_lock = threading.Lock()
@@ -335,6 +336,16 @@ class Handler(BaseHTTPRequestHandler):
                 json.dump({"groups": names, "ts": int(time.time())}, f, ensure_ascii=False)
             os.replace(tmp, config.SELECTION)
             return self._json({"ok": True, "groups": names})
+        if u.path == "/api/group/apply":
+            mids = body.get("mids") or []
+            name = (body.get("tag") or "常看").strip()[:16]
+            if not mids:
+                return self._json({"ok": False, "msg": "没有勾选"}, 400)
+            try:
+                r = candidate.apply_group(mids, name)
+            except BiliError as e:
+                return self._json({"ok": False, "msg": str(e)}, 400)
+            return self._json({"ok": True, **r})
         if u.path == "/api/candidates/run":
             started = candidate.run()
             return self._json({"ok": True, "started": started})

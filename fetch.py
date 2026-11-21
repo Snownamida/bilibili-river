@@ -36,6 +36,25 @@ CREATE TABLE IF NOT EXISTS members(
     uname  TEXT,
     PRIMARY KEY(mid, grp)
 );
+CREATE TABLE IF NOT EXISTS history(
+    bvid     TEXT,
+    aid      INTEGER,
+    mid      INTEGER,
+    uname    TEXT,
+    face     TEXT,
+    title    TEXT,
+    view_at  INTEGER,
+    progress INTEGER,
+    duration INTEGER,
+    business TEXT,
+    PRIMARY KEY(bvid, view_at)
+);
+CREATE INDEX IF NOT EXISTS idx_history_mid ON history(mid, view_at);
+CREATE TABLE IF NOT EXISTS follow_state(
+    mid        INTEGER PRIMARY KEY,
+    attribute  INTEGER,
+    checked_at INTEGER
+);
 CREATE TABLE IF NOT EXISTS fetch_state(
     mid          INTEGER PRIMARY KEY,
     last_fetched INTEGER DEFAULT 0,

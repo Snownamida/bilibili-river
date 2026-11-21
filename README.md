@@ -76,6 +76,17 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now bili-river
 ```
 
+## 常看候选
+
+页面 `/candidates`（河道页底部也有入口）。它不看内容分类，只看行为：**最近 90 天这个 UP 发的视频，
+你点开了多大比例**（观看率），再拿完播和观看次数修正。
+
+流程：同步观看历史（游标翻页，只留关注过的人）→ 对候选 UP 逐个拉最近投稿 → 算观看率 → 排序。
+一次大约 5–8 分钟，结果存 `data/candidates.json`，勾选后可复制名单或导出 CSV。
+
+写回 B 站（建「常看」组、批量移人）还没做：那需要 `bili_jct`（写操作的 CSRF token），
+现在 cookie 里只有 `SESSDATA`。
+
 ## 手机 / 电脑
 
 - **手机**：单列卡片。点卡片直接唤起 B 站 App（`bilibili://video/<aid>`）；两秒内没被 App 接管，
@@ -128,6 +139,8 @@ curl -X POST --data-binary @backup.tar.gz 'http://<host>:8100/api/import'
 | `GET /api/status` | 上一轮抓取状态 |
 | `GET /api/groups` | 分组缓存 + 当前勾选 |
 | `POST /api/groups` | `{"groups": ["我追"]}` 保存勾选 |
+| `GET /api/candidates` | 常看候选 + 进度 |
+| `POST /api/candidates/run` | 重新同步历史并分析 |
 | `GET /api/export[?cookie=1]` | 下载备份 |
 | `POST /api/import` | 上传备份恢复 |
 | `POST /api/seen` | `{"bvid": "BV..."}` 或 `{"days": 7}` 全部已读 |

@@ -174,6 +174,20 @@ class Bili:
             time.sleep(0.6)
         return out
 
+    def history(self, maxv=0, view_at=0, ps=20):
+        """观看历史，游标翻页：max 用上一条的 history.oid，view_at 用上一条的 view_at。"""
+        d = self._get("https://api.bilibili.com/x/web-interface/history/cursor",
+                      {"max": maxv, "view_at": view_at, "ps": ps},
+                      referer="https://www.bilibili.com/")
+        return d or {}
+
+    def relations(self, mids):
+        """批量查关注关系：{mid: {attribute, ...}}，attribute 2=关注 6=互关。"""
+        d = self._get("https://api.bilibili.com/x/relation/relations",
+                      {"fids": ",".join(str(m) for m in mids)},
+                      referer="https://space.bilibili.com/")
+        return d or {}
+
     def _app_get(self, path, params):
         p = dict(params)
         p.update({"appkey": APP_KEY, "ts": int(time.time()),

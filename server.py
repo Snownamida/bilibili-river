@@ -18,6 +18,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit, parse_qs
 from xml.sax.saxutils import escape
 
+import candidate
 import config
 import fetch
 
@@ -254,6 +255,15 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         u = urlsplit(self.path)
         q = parse_qs(u.query)
+        if u.path in ("/candidates", "/candidates.html"):
+            with open(os.path.join(config.ROOT, "candidates.html"), encoding="utf-8") as f:
+                return self._send(200, f.read())
+        if u.path == "/api/candidates":
+            data = candidate.load()
+            data["status"] = candidate.read_status()
+            return self._json(data)
+        if u.path == "/api/candidates/status":
+            return self._json(candidate.read_status())
         if u.path in ("/", "/index.html"):
             with open(os.path.join(config.ROOT, "index.html"), encoding="utf-8") as f:
                 return self._send(200, f.read())
@@ -325,6 +335,9 @@ class Handler(BaseHTTPRequestHandler):
                 json.dump({"groups": names, "ts": int(time.time())}, f, ensure_ascii=False)
             os.replace(tmp, config.SELECTION)
             return self._json({"ok": True, "groups": names})
+        if u.path == "/api/candidates/run":
+            started = candidate.run()
+            return self._json({"ok": True, "started": started})
         if u.path == "/api/refresh":
             started = _start_fetch(background=True, force=True)
             return self._json({"ok": True, "started": started})

@@ -67,7 +67,7 @@ def items(days=7, grp="all", unseen=False):
 def summary(days, unseen):
     """分组计数和总数要独立算，不能拿筛过的结果集去数（否则别的组永远是 0）。"""
     since = int(time.time()) - int(days) * 86400
-    where = "v.pubdate >= ?" + (" AND v.seen = 0" if unseen else "")
+    where = "v.pubdate >= ? AND v.hidden = 0" + (" AND v.seen = 0" if unseen else "")
     con = db()
     try:
         total = con.execute(

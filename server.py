@@ -413,23 +413,26 @@ NIGHTLY_STATE = os.path.join(config.DATA, "nightly_state.json")
 
 
 def nightly_loop():
-    """每天 03:20 之后跑一次 nightly.py（进程活着才有效）。"""
+    """每天 03:20 之后跑一次 nightly.py；错过了（比如半夜重启）就当天补跑。"""
     import nightly
+    last_fail = 0
     while True:
         now = time.localtime()
-        if now.tm_hour == 3 and now.tm_min >= 20:
+        due = now.tm_hour > 3 or (now.tm_hour == 3 and now.tm_min >= 20)
+        if due:
             try:
                 with open(NIGHTLY_STATE, encoding="utf-8") as f:
                     done = json.load(f).get("date")
             except Exception:
                 done = None
             today = time.strftime("%F")
-            if done != today:
-                with open(NIGHTLY_STATE, "w", encoding="utf-8") as f:
-                    json.dump({"date": today}, f)
+            if done != today and time.time() - last_fail > 3600:
                 try:
                     nightly.main()
+                    with open(NIGHTLY_STATE, "w", encoding="utf-8") as f:
+                        json.dump({"date": today, "ts": int(time.time())}, f)
                 except Exception as e:
+                    last_fail = time.time()
                     print("nightly failed:", repr(e), flush=True)
         time.sleep(300)
 

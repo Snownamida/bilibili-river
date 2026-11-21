@@ -13,12 +13,12 @@ DB = os.path.join(DATA, "river.db")
 RUN = os.path.join(DATA, "run.json")
 COOKIE = os.environ.get("BILI_COOKIE", os.path.expanduser("~/.config/bili-river/cookie.header"))
 
-# 只绑 tailnet，手机通过 100.87.197.52 访问
-HOST = os.environ.get("BILI_HOST", "100.87.197.52")
+# 只绑内网/tailnet；本机 IP 不放代码里，见文件末尾的 local_config
+HOST = os.environ.get("BILI_HOST", "127.0.0.1")
 PORT = int(os.environ.get("BILI_PORT", "8100"))
 
 # 河道接哪些关注分组（名字，随便加/删）
-GROUPS = ["老东西", "我追"]
+GROUPS = []  # 空 = 等你在页面上勾；页面勾选结果存在 data/selection.json
 
 # 每个 UP 每轮拉多少条；首次见到的 UP 多回填一些
 PS = 20
@@ -49,3 +49,10 @@ def selected_groups():
     except Exception:
         pass
     return list(GROUPS)
+
+
+# 本机私有覆盖（HOST/PORT 等），文件不进仓库
+try:
+    from local_config import *  # noqa: F401,F403
+except ImportError:
+    pass

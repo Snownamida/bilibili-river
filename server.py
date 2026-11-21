@@ -62,6 +62,26 @@ def items(days=7, grp="all", unseen=False):
     return rows
 
 
+def summary(days, unseen):
+    """分组计数和总数要独立算，不能拿筛过的结果集去数（否则别的组永远是 0）。"""
+    since = int(time.time()) - int(days) * 86400
+    where = "v.pubdate >= ?" + (" AND v.seen = 0" if unseen else "")
+    con = db()
+    try:
+        total = con.execute(
+            f"SELECT COUNT(DISTINCT v.bvid) FROM videos v JOIN members m ON m.mid = v.mid "
+            f"WHERE {where}", (since,)).fetchone()[0]
+        per = dict(con.execute(
+            f"SELECT m.grp, COUNT(DISTINCT v.bvid) FROM videos v JOIN members m ON m.mid = v.mid "
+            f"WHERE {where} GROUP BY m.grp", (since,)).fetchall())
+        unread = con.execute(
+            "SELECT COUNT(DISTINCT v.bvid) FROM videos v JOIN members m ON m.mid = v.mid "
+            "WHERE v.pubdate >= ? AND v.seen = 0", (since,)).fetchone()[0]
+    finally:
+        con.close()
+    return per, total, unread
+
+
 def mark_seen(bvid=None, days=None):
     con = db()
     try:
@@ -242,16 +262,13 @@ class Handler(BaseHTTPRequestHandler):
             grp = q.get("grp", ["all"])[0]
             unseen = q.get("unseen", ["0"])[0] == "1"
             rows = items(days, grp, unseen)
-            per = {}
-            for r in rows:
-                for g in r["grps"]:
-                    if g:
-                        per[g] = per.get(g, 0) + 1
+            per, total, unread = summary(days, unseen)
             return self._json({
                 "items": rows,
                 "groups": config.selected_groups(),
                 "counts": per,
-                "unread": sum(1 for r in rows if not r["seen"]),
+                "total": total,
+                "unread": unread,
                 "run": read_run(),
             })
         if u.path == "/api/status":

@@ -244,6 +244,10 @@ def run(force=False):
         if config.PAUSE_EVERY and i % config.PAUSE_EVERY == 0 and i < len(mids):
             time.sleep(config.PAUSE_SECONDS)
 
+    # 抓完顺手用观看历史把看过的标掉
+    cur.execute("UPDATE videos SET seen=1 WHERE seen=0 AND bvid IN (SELECT bvid FROM history WHERE bvid IS NOT NULL)")
+    con.commit()
+
     return _finish(con, t0, len(mids), added, errs, b, uname, total_mids=total_mids)
 
 

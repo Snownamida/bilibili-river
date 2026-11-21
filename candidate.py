@@ -83,6 +83,10 @@ def sync_history(days=180, max_pages=200, progress=status):
         time.sleep(1.0)
 
     _refresh_follows(b, con, progress)
+    # 历史里出现过的视频 = 已经看过，标掉
+    con.execute("UPDATE videos SET seen=1 WHERE seen=0 AND bvid IN"
+                " (SELECT bvid FROM history WHERE bvid IS NOT NULL)")
+    con.commit()
     con.close()
     return added
 

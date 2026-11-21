@@ -84,11 +84,11 @@ def summary(days, unseen):
     return per, total, unread
 
 
-def mark_seen(bvid=None, days=None):
+def mark_seen(bvid=None, days=None, seen=1):
     con = db()
     try:
         if bvid:
-            con.execute("UPDATE videos SET seen=1 WHERE bvid=?", (bvid,))
+            con.execute("UPDATE videos SET seen=? WHERE bvid=?", (1 if seen else 0, bvid))
         elif days:
             since = int(time.time()) - int(days) * 86400
             con.execute("UPDATE videos SET seen=1 WHERE seen=0 AND pubdate>=?", (since,))
@@ -323,7 +323,8 @@ class Handler(BaseHTTPRequestHandler):
             body = {}
         if u.path == "/api/seen":
             days = body.get("days")
-            mark_seen(bvid=body.get("bvid"), days=days)
+            seen = int(body.get("seen", 1))
+            mark_seen(bvid=body.get("bvid"), days=days, seen=seen)
             return self._json({"ok": True})
         if u.path == "/api/groups":
             names = body.get("groups")

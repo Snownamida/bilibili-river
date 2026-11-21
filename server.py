@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """B 站河道：页面 + API + 定时抓取。
 
-只绑 tailnet：http://100.87.197.52:8100
+只绑内网/tailnet（本机 IP 见 local_config.py）
 启动后每 30 分钟自己抓一轮；也可以 POST /api/refresh 立刻抓。
 """
 import glob

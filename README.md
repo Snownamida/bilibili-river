@@ -76,6 +76,12 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now bili-river
 ```
 
+## 手机 / 电脑
+
+- **手机**：单列卡片。点卡片直接唤起 B 站 App（`bilibili://video/<aid>`）；两秒内没被 App 接管，
+  会弹一个「用网页看」的兜底链接，不会把人卡死。
+- **电脑**：内容居中、限宽 880px，封面放大；点击在新标签页打开网页版。
+
 ## 备份 / 迁移
 
 页面最底下有「导出 / 导出（含 cookie）/ 导入」。导出的 `.tar.gz` 里是：

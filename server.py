@@ -40,7 +40,7 @@ def read_run():
 
 def items(days=7, grp="all", unseen=False):
     since = int(time.time()) - int(days) * 86400
-    sql = ["SELECT v.bvid, v.title, v.pubdate, v.cover, v.duration, v.tname, v.seen,",
+    sql = ["SELECT v.bvid, v.aid, v.title, v.pubdate, v.cover, v.duration, v.tname, v.seen,",
            "       v.mid, m.uname, GROUP_CONCAT(DISTINCT m.grp) AS grps",
            "FROM videos v JOIN members m ON m.mid = v.mid",
            "WHERE v.pubdate >= ?"]

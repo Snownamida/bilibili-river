@@ -369,6 +369,31 @@ def _start_fetch(background=True, force=False):
     return True
 
 
+NIGHTLY_STATE = os.path.join(config.DATA, "nightly_state.json")
+
+
+def nightly_loop():
+    """每天 03:20 之后跑一次 nightly.py（进程活着才有效）。"""
+    import nightly
+    while True:
+        now = time.localtime()
+        if now.tm_hour == 3 and now.tm_min >= 20:
+            try:
+                with open(NIGHTLY_STATE, encoding="utf-8") as f:
+                    done = json.load(f).get("date")
+            except Exception:
+                done = None
+            today = time.strftime("%F")
+            if done != today:
+                with open(NIGHTLY_STATE, "w", encoding="utf-8") as f:
+                    json.dump({"date": today}, f)
+                try:
+                    nightly.main()
+                except Exception as e:
+                    print("nightly failed:", repr(e), flush=True)
+        time.sleep(300)
+
+
 def scheduler():
     """按上一轮的 ts 排下一轮，重启不会立刻又去撞 B 站。"""
     time.sleep(5)
@@ -386,6 +411,7 @@ def main():
     os.makedirs(config.DATA, exist_ok=True)
     if os.environ.get("BILI_NO_FETCH") != "1":
         threading.Thread(target=scheduler, daemon=True).start()
+        threading.Thread(target=nightly_loop, daemon=True).start()
     srv = ThreadingHTTPServer((config.HOST, config.PORT), Handler)
     print(f"bili-river on http://{config.HOST}:{config.PORT}", flush=True)
     srv.serve_forever()

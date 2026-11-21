@@ -63,7 +63,7 @@
   <input type="search" id="q" placeholder="搜名字">
   <button class="btn" id="run">重新分析</button>
 </div>
-<p class="hint">标准是行为不是内容：最近 90 天这个 UP 发的视频，你点开了多大比例（观看率），再看完播和次数修正。只统计你关注的人。</p>
+<p class="hint">标准是行为不是内容：近期 80% 看「最近 90 天他发的视频你点开多大比例」，长期 20% 看点攒/投币/收藏/稍后再看。只统计你关注的人。</p>
 <main id="list"></main>
 <footer>
   <span class="n" id="picked">已选 0</span>
@@ -112,12 +112,19 @@ function render(){
   $("#list").innerHTML = items.map(x => {
     const r = x.rate == null ? "" : `<span class="rate ${x.rate>=0.6?"hi":x.rate>=0.3?"mid":""}">观看率 ${pct(x.rate)}</span>`;
     const up = x.uploads ? `${x.seen ?? x.watched}/${x.uploads}` : "?";
+    const sig = x.signals || {};
+    const bits = [];
+    if (sig.like) bits.push(`赞${sig.like}`);
+    if (sig.coin) bits.push(`币${sig.coin}`);
+    if (sig.fav) bits.push(`藏${sig.fav}`);
+    if (sig.toview) bits.push(`稍后${sig.toview}`);
+    const longterm = bits.length ? ` · ${bits.join(" ")}` : "";
     return `<label class="row">
       <input type="checkbox" data-mid="${x.mid}" ${picked.has(String(x.mid))?"checked":""}>
       <img src="${esc(x.face||"")}" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.visibility='hidden'">
       <div class="info">
         <div class="name">${esc(x.uname)}${(x.groups||[]).map(g=>`<span class="tag">${esc(g)}</span>`).join("")}</div>
-        <div class="stats">看了 ${up} 条投稿 · 共 ${x.watched} 条 · ${r} · 完播 ${pct(x.completion)} · 最近 ${when(x.last)}</div>
+        <div class="stats">看了 ${up} 条投稿 · 共 ${x.watched} 条 · ${r} · 完播 ${pct(x.completion)} · 最近 ${when(x.last)}${longterm}</div>
       </div>
     </label>`;
   }).join("");

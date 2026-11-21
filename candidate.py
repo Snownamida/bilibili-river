@@ -10,6 +10,7 @@ import time
 
 import config
 import fetch
+import signals
 from bili import Bili, BiliError
 
 LOCK = threading.Lock()
@@ -145,17 +146,33 @@ def build(window_days=90, max_ups=60, progress=status):
         progress(phase="analyze", done=i, total=total)
         time.sleep(2.0)
 
-    # 分数：观看率为主，次数和完播做修正；没有投稿数据的不硬排前面
-    def score(x):
+    # 近期行为分：观看率为主，次数和完播做修正；样本小的降权
+    def recent(x):
         r = x["rate"] if x["rate"] is not None else 0
         s = r * (0.5 + 0.5 * x["completion"]) * (1 + min(x["watched"], 10) / 20)
-        if x["watched"] < 3 or x["uploads"] < 5:   # 样本太小，别让它排前面
+        if x["watched"] < 3 or x["uploads"] < 5:
             s *= 0.5
         return s
 
-    out.sort(key=score, reverse=True)
+    # 长期信号：点赞/投币/收藏/稍后再看，归一化后和近期行为加权
+    sig = signals.counts()
+    for x in out:
+        s = sig.get(x["mid"], {})
+        x["signals"] = {k: s.get(k, 0) for k in ("like", "coin", "fav", "toview")}
+        x["recent"] = round(recent(x), 3)
+
+    def raw_signal(x):
+        s = x["signals"]
+        return s["like"] + s["coin"] * 1.5 + s["fav"] * 1.2 + s["toview"] * 0.8
+
+    # 长期信号普遍稀疏（中位数 1 左右），用饱和函数，别让某一个 outlier 通吃
+    def score(x):
+        longterm = min(1.0, raw_signal(x) / 8.0)
+        return 0.8 * x["recent"] + 0.2 * longterm
+
     for x in out:
         x["score"] = round(score(x), 3)
+    out.sort(key=lambda x: x["score"], reverse=True)
     con.close()
     return out
 

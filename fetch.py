@@ -36,6 +36,18 @@ CREATE TABLE IF NOT EXISTS members(
     uname  TEXT,
     PRIMARY KEY(mid, grp)
 );
+CREATE TABLE IF NOT EXISTS signals(
+    kind  TEXT NOT NULL,
+    oid   TEXT NOT NULL,
+    bvid  TEXT,
+    mid   INTEGER,
+    uname TEXT,
+    title TEXT,
+    ts    INTEGER,
+    extra TEXT,
+    PRIMARY KEY(kind, oid)
+);
+CREATE INDEX IF NOT EXISTS idx_signals_mid ON signals(mid);
 CREATE TABLE IF NOT EXISTS history(
     bvid     TEXT,
     aid      INTEGER,
@@ -112,6 +124,10 @@ def fetch_one(b, mid, ps):
 
 def run(force=False):
     t0 = time.time()
+    lock = os.path.join(config.DATA, "nightly.lock")
+    if os.path.exists(lock) and time.time() - os.path.getmtime(lock) < 1200:
+        print("nightly 正在跑，跳过这一轮", flush=True)
+        return None
     if not force and cooling_down():
         print("还在退避期，跳过这一轮", flush=True)
         return None

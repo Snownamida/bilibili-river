@@ -110,11 +110,6 @@
 <div id="banner"></div>
 <nav id="groups"></nav>
 <div class="bar">
-  <div class="seg" id="scope">
-    <button data-days="1">24 小时</button>
-    <button data-days="7" class="on">7 天</button>
-    <button data-days="30">30 天</button>
-  </div>
   <div class="seg" id="mode">
     <button data-unseen="0">全部</button>
     <button data-unseen="1" class="on">未看</button>
@@ -147,7 +142,8 @@
 <div id="toast"></div>
 
 <script>
-const state = {days: 7, grp: null, unseen: 1, data: null};
+const state = {grp: null, unseen: 1, data: null};
+const DAYS = {unseen: 3650, all: 90};
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -210,7 +206,7 @@ function render(){
     ? `<div class="banner">${esc(run.errors[0].where)}: ${esc(run.errors[0].msg)}${run.errors.length>1?`（共 ${run.errors.length} 条）`:""}</div>` : "";
 
   if (!items.length){
-    $("#list").innerHTML = `<div class="empty">这个窗口里没有投稿<br><span style="font-size:12px">换个分组或把窗口拉到 30 天</span></div>`;
+    $("#list").innerHTML = `<div class="empty">这里没有未看的投稿<br><span style="font-size:12px">换个分组，或切到「全部」看已读的</span></div>`;
     return;
   }
   let html = "", last = "";
@@ -302,7 +298,8 @@ async function load(){
     try { state.grp = (await (await fetch("/api/groups")).json()).default_grp || "all"; }
     catch(e){ state.grp = "all"; }
   }
-  const q = new URLSearchParams({days: state.days, grp: state.grp, unseen: state.unseen});
+  const q = new URLSearchParams({days: state.unseen ? DAYS.unseen : DAYS.all,
+                                 grp: state.grp, unseen: state.unseen});
   try {
     const r = await fetch("/api/items?" + q);
     state.data = await r.json();
@@ -313,11 +310,6 @@ async function load(){
   render();
 }
 
-$("#scope").querySelectorAll("button").forEach(b => b.onclick = () => {
-  state.days = +b.dataset.days;
-  $("#scope").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
-  load();
-});
 $("#mode").querySelectorAll("button").forEach(b => b.onclick = () => {
   state.unseen = +b.dataset.unseen;
   $("#mode").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
@@ -325,7 +317,7 @@ $("#mode").querySelectorAll("button").forEach(b => b.onclick = () => {
 });
 $("#markall").onclick = async () => {
   await fetch("/api/seen", {method:"POST", headers:{"Content-Type":"application/json"},
-                            body: JSON.stringify({days: state.days})});
+                            body: JSON.stringify({days: state.unseen ? DAYS.unseen : DAYS.all})});
   load();
 };
 $("#status").onclick = doRefresh;

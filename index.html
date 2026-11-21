@@ -145,7 +145,7 @@
 <div id="toast"></div>
 
 <script>
-const state = {days: 7, grp: "all", unseen: 0, data: null};
+const state = {days: 7, grp: null, unseen: 0, data: null};
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -282,6 +282,7 @@ async function load(){
   try {
     const r = await fetch("/api/items?" + q);
     state.data = await r.json();
+    if (state.grp === null) state.grp = state.data.default_grp || "all";
   } catch(e){
     $("#list").innerHTML = `<div class="empty">连不上服务器</div>`; return;
   }

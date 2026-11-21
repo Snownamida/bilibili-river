@@ -18,6 +18,7 @@ HOST = os.environ.get("BILI_HOST", "127.0.0.1")
 PORT = int(os.environ.get("BILI_PORT", "8100"))
 
 # 河道接哪些关注分组（名字，随便加/删）
+DEFAULT_GRP = "常看"   # 页面开屏默认显示的分组（不在勾选里就退回"全部"）
 GROUPS = []  # 空 = 等你在页面上勾；页面勾选结果存在 data/selection.json
 
 # 每个 UP 每轮拉多少条；首次见到的 UP 多回填一些

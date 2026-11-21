@@ -277,6 +277,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({
                 "items": rows,
                 "groups": config.selected_groups(),
+                "default_grp": (config.DEFAULT_GRP if config.DEFAULT_GRP in config.selected_groups() else "all"),
                 "counts": per,
                 "total": total,
                 "unread": unread,

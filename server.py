@@ -46,7 +46,7 @@ def items(days=7, grp="all", unseen=False):
     sql = ["SELECT v.bvid, v.aid, v.title, v.pubdate, v.cover, v.duration, v.tname, v.seen,",
            "       v.mid, m.uname, GROUP_CONCAT(DISTINCT m.grp) AS grps",
            "FROM videos v JOIN members m ON m.mid = v.mid",
-           "WHERE v.pubdate >= ? AND v.hidden = 0"]
+           "WHERE v.pubdate >= ? AND v.hidden = 0 AND v.paid = 0"]
     args = [since]
     if grp and grp != "all":
         sql.append("AND m.grp = ?")
@@ -68,7 +68,7 @@ def items(days=7, grp="all", unseen=False):
 def summary(days, unseen):
     """分组计数和总数要独立算，不能拿筛过的结果集去数（否则别的组永远是 0）。"""
     since = int(time.time()) - int(days) * 86400
-    base = "v.pubdate >= ? AND v.hidden = 0"
+    base = "v.pubdate >= ? AND v.hidden = 0 AND v.paid = 0"
     where = base + (" AND v.seen = 0" if unseen else "")
     con = db()
     try:

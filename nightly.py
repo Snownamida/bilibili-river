@@ -10,6 +10,7 @@ import time
 
 import candidate
 import config
+import paidscan
 import personal
 import signals
 import snapshot
@@ -32,6 +33,9 @@ def main():
 
     per = personal.sync()
     print(f"  个人资料 {per} ({time.time()-t0:.0f}s)", flush=True)
+
+    paid = paidscan.scan(days=30, limit=500, gap=1.2)
+    print(f"  充电/付费检查 {paid} ({time.time()-t0:.0f}s)", flush=True)
 
     items = candidate.build()
     tmp = os.path.join(config.DATA, "candidates.json")

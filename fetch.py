@@ -28,7 +28,9 @@ CREATE TABLE IF NOT EXISTS videos(
     tname      TEXT,
     first_seen INTEGER,
     seen       INTEGER DEFAULT 0,
-    hidden     INTEGER DEFAULT 0
+    hidden     INTEGER DEFAULT 0,
+    paid       INTEGER DEFAULT 0,
+    paid_at    INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_videos_pub ON videos(pubdate DESC);
 CREATE TABLE IF NOT EXISTS members(
@@ -142,6 +144,11 @@ def db():
     con.execute("PRAGMA journal_mode=WAL")
     con.execute("PRAGMA busy_timeout=20000")
     con.executescript(SCHEMA)
+    cols = [r[1] for r in con.execute("PRAGMA table_info(videos)")]
+    if "paid" not in cols:
+        con.execute("ALTER TABLE videos ADD COLUMN paid INTEGER DEFAULT 0")
+    if "paid_at" not in cols:
+        con.execute("ALTER TABLE videos ADD COLUMN paid_at INTEGER")
     return con
 
 

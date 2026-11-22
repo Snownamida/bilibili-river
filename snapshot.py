@@ -13,7 +13,8 @@ import time
 import config
 
 DEST = os.environ.get("BILI_DATA_DIR", os.path.expanduser("~/bilibili-data"))
-TABLES = ("history", "signals", "videos", "members", "fetch_state", "follow_state")
+TABLES = ("history", "signals", "videos", "members", "fetch_state", "follow_state",
+          "all_members", "profiles", "account", "followings", "followers", "blacks")
 
 
 def _dump(con, table, path):

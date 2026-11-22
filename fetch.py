@@ -49,6 +49,48 @@ CREATE TABLE IF NOT EXISTS signals(
     PRIMARY KEY(kind, oid)
 );
 CREATE INDEX IF NOT EXISTS idx_signals_mid ON signals(mid);
+CREATE TABLE IF NOT EXISTS all_members(
+    mid   INTEGER NOT NULL,
+    grp   TEXT NOT NULL,
+    uname TEXT,
+    PRIMARY KEY(mid, grp)
+);
+CREATE TABLE IF NOT EXISTS account(
+    k          TEXT PRIMARY KEY,
+    v          TEXT,
+    fetched_at INTEGER
+);
+CREATE TABLE IF NOT EXISTS followings(
+    mid       INTEGER PRIMARY KEY,
+    uname     TEXT,
+    sign      TEXT,
+    face      TEXT,
+    mtime     INTEGER,
+    attribute INTEGER,
+    special   INTEGER,
+    tags      TEXT
+);
+CREATE TABLE IF NOT EXISTS followers(
+    mid   INTEGER PRIMARY KEY,
+    uname TEXT,
+    face  TEXT,
+    mtime INTEGER
+);
+CREATE TABLE IF NOT EXISTS blacks(
+    mid   INTEGER PRIMARY KEY,
+    uname TEXT,
+    mtime INTEGER
+);
+CREATE TABLE IF NOT EXISTS profiles(
+    mid        INTEGER PRIMARY KEY,
+    uname      TEXT,
+    sign       TEXT,
+    follower   INTEGER,
+    official   TEXT,
+    top_json   TEXT,
+    recent_json TEXT,
+    fetched_at INTEGER
+);
 CREATE TABLE IF NOT EXISTS history(
     bvid     TEXT,
     aid      INTEGER,
@@ -86,7 +128,9 @@ def touch_state(cur, mid, err=None):
 
 def db():
     os.makedirs(config.DATA, exist_ok=True)
-    con = sqlite3.connect(config.DB, timeout=15)
+    con = sqlite3.connect(config.DB, timeout=20)
+    con.execute("PRAGMA journal_mode=WAL")
+    con.execute("PRAGMA busy_timeout=20000")
     con.executescript(SCHEMA)
     return con
 

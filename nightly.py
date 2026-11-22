@@ -10,6 +10,7 @@ import time
 
 import candidate
 import config
+import personal
 import signals
 import snapshot
 
@@ -28,6 +29,9 @@ def main():
 
     sig = signals.sync_all()
     print(f"  信号 {sig} ({time.time()-t0:.0f}s)", flush=True)
+
+    per = personal.sync()
+    print(f"  个人资料 {per} ({time.time()-t0:.0f}s)", flush=True)
 
     items = candidate.build()
     tmp = os.path.join(config.DATA, "candidates.json")

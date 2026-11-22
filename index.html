@@ -123,12 +123,6 @@
   <a href="/candidates">常看候选</a>
   <span>·</span>
   <a href="/tidy">分组整理</a>
-  <span>·</span>
-  <span>备份</span>
-  <a href="/api/export">导出</a>
-  <a href="/api/export?cookie=1" onclick="return confirm('备份里会包含 B 站登录 cookie，可以整机迁移；确定导出？')">导出（含 cookie）</a>
-  <label for="imp">导入</label>
-  <input id="imp" type="file" accept=".gz,.tgz,application/gzip" hidden>
 </footer>
 
 <div id="sheet" hidden>
@@ -435,18 +429,6 @@ function toast(t){
   el.textContent = t; el.classList.add("show");
   clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove("show"), 2400);
 }
-$("#imp").onchange = async (e) => {
-  const f = e.target.files[0];
-  if (!f) return;
-  if (!confirm(`用「${f.name}」覆盖当前数据？`)){ e.target.value = ""; return; }
-  toast("导入中…");
-  let d;
-  try { d = await (await fetch("/api/import", {method:"POST", body: f})).json(); }
-  catch(err){ toast("导入失败：连不上"); return; }
-  if (!d.ok){ toast(d.msg || "导入失败"); return; }
-  toast("已恢复，正在刷新…");
-  setTimeout(() => location.reload(), 900);
-};
 $("#sheet-cancel").onclick = () => { $("#sheet").hidden = true; };
 $("#sheet").querySelector(".mask").onclick = () => { $("#sheet").hidden = true; };
 $("#sheet-save").onclick = async () => {

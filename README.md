@@ -146,48 +146,20 @@ meta.json        快照时间与行数
 服务进程每天 03:20 后跑一次 `nightly.py`：补历史 → 补信号 → 重算候选 → 快照推送。
 跑的时候会写 `data/nightly.lock`，河道抓取那一轮自动跳过，避免两个任务同时打接口。
 
-## 备份 / 迁移
+## 恢复 / 迁移
 
-页面最底下有「导出 / 导出（含 cookie）/ 导入」。导出的 `.tar.gz` 里是：
+数据都在私有仓库 `bilibili-data`（每晚快照），**cookie 不进去**——需要时从浏览器重新拿一次。
 
-```
-manifest.json          版本、导出时间、勾选的分组
-data/river.db          全部投稿 + 已读状态 + 抓取进度
-data/selection.json    页面上勾选的分组
-data/groups.json       分组缓存（人数）
-cookie.header          只有勾"含 cookie"才有，权限 0600
-```
-
-服务器炸了重建：
-
-1. 老机器页面底部点「导出（含 cookie）」，把文件存到手机/网盘
-2. 新机器 `git clone`，装个 python3，跑 `./run.sh`
-3. 打开页面 → 底部「导入」→ 选备份，自动恢复数据库、勾选、cookie
-4. 新机器的 IP 写进 `local_config.py`，重启
-
-命令行等价：
+新机器：
 
 ```bash
-curl -o backup.tar.gz 'http://<host>:8100/api/export?cookie=1'
-curl -X POST --data-binary @backup.tar.gz 'http://<host>:8100/api/import'
+git clone git@github.com:Snownamida/bilibili-river.git
+git clone git@github.com:Snownamida/bilibili-data.git ~/bilibili-data
+cd bilibili-river
+python3 restore.py --force     # 把 JSONL 灌回 SQLite
+# 写 cookie（SESSDATA + bili_jct）
+./run.sh
 ```
-
-导入前会把现有库另存为 `data/river.db.before-import-<时间戳>`（保留最近 3 份）。
-
-## 划掉不想看的
-
-卡片右侧「✕」= 隐藏，所有视图里都不再出现（数据库 `hidden=1`），点完 6 秒内可撤销。
-「已看」只是标记，仍能在「全部」里看到；两者不一样。
-
-## 保留多久
-
-不删。投稿全部留档（回填每个 UP 最近 30 条），「未看」的判定是：
-
-- 比这个 UP 库里最新一条还新 → 新发的，未看
-- 第一次抓这个 UP 时，只看最近 14 天的算未看，更早的只当档案
-- 之后用观看历史把看过的标掉
-
-所以发得不勤、跨度很大的 UP 也不会吃亏：隔半年发一条，进来就是“最新一条”，照样进未看。
 
 ## 数据
 

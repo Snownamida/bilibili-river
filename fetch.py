@@ -81,6 +81,16 @@ CREATE TABLE IF NOT EXISTS blacks(
     uname TEXT,
     mtime INTEGER
 );
+CREATE TABLE IF NOT EXISTS msgfeed(
+    kind  TEXT NOT NULL,
+    id    TEXT NOT NULL,
+    mid   INTEGER,
+    uname TEXT,
+    title TEXT,
+    ts    INTEGER,
+    raw   TEXT,
+    PRIMARY KEY(kind, id)
+);
 CREATE TABLE IF NOT EXISTS profiles(
     mid        INTEGER PRIMARY KEY,
     uname      TEXT,

@@ -75,8 +75,12 @@ def fetch_profiles(limit=50):
                 print("done", done, flush=True)
         except BiliError as e:
             print("fail", mid, e, flush=True)
+            try: con.rollback()
+            except Exception: pass
         except Exception as e:
             print("err", mid, repr(e)[:80], flush=True)
+            try: con.rollback()
+            except Exception: pass
         time.sleep(2)
     con.close()
     return done

@@ -20,6 +20,7 @@ from xml.sax.saxutils import escape
 
 import candidate
 import config
+from bili import Bili
 from bili import BiliError
 import fetch
 
@@ -134,6 +135,47 @@ def feed_xml(limit=60):
         out.append("</entry>")
     out.append("</feed>")
     return "\n".join(out)
+
+
+def tidy_data():
+    import json as _json
+    try:
+        props = _json.load(open(os.path.join(config.DATA, "tidy_proposals.json"), encoding="utf-8"))
+    except Exception:
+        props = []
+    con = db()
+    try:
+        faces = {r[0]: r[1] for r in con.execute("SELECT mid, face FROM followings")}
+    except Exception:
+        faces = {}
+    con.close()
+    for p in props:
+        p["face"] = faces.get(p["mid"], "")
+        p.setdefault("confidence", 0.9)
+    return props
+
+
+def tidy_apply(items):
+    """items: [{mid, group}]，按组批量加。"""
+    b = Bili(config.COOKIE)
+    if not b.csrf:
+        raise BiliError("cookie 里没有 bili_jct")
+    by = {}
+    for it in items:
+        by.setdefault(it["group"], []).append(it["mid"])
+    created, moved = [], 0
+    for grp, mids in by.items():
+        g = next((x for x in b.groups() if x["name"] == grp), None)
+        if not g:
+            d = b.create_tag(grp)
+            g = {"tagid": d.get("tagid"), "name": grp}
+            created.append(grp)
+        for i in range(0, len(mids), 20):
+            chunk = [int(m) for m in mids[i:i + 20]]
+            b.add_users(chunk, g["tagid"])
+            moved += len(chunk)
+            time.sleep(1.5)
+    return {"moved": moved, "created": created}
 
 
 EXPORT_FILES = {"manifest.json", "data/river.db", "data/selection.json",
@@ -281,6 +323,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         u = urlsplit(self.path)
         q = parse_qs(u.query)
+        if u.path in ("/tidy", "/tidy.html"):
+            with open(os.path.join(config.ROOT, "tidy.html"), encoding="utf-8") as f:
+                return self._send(200, f.read())
         if u.path in ("/candidates", "/candidates.html"):
             with open(os.path.join(config.ROOT, "candidates.html"), encoding="utf-8") as f:
                 return self._send(200, f.read())
@@ -314,6 +359,14 @@ class Handler(BaseHTTPRequestHandler):
             })
         if u.path == "/api/status":
             return self._json(read_run() or {})
+        if u.path == "/api/tidy":
+            props = tidy_data()
+            grp = q.get("grp", ["all"])[0]
+            items = [p for p in props if grp == "all" or p.get("group") == grp]
+            from collections import Counter
+            counts = Counter(p.get("group") for p in props)
+            return self._json({"items": items, "counts": counts,
+                               "total": len(props)})
         if u.path == "/api/export":
             blob = make_export(q.get("cookie", ["0"])[0] == "1")
             name = "bili-river-" + time.strftime("%Y%m%d-%H%M") + ".tar.gz"
@@ -376,6 +429,15 @@ class Handler(BaseHTTPRequestHandler):
                 json.dump({"groups": names, "ts": int(time.time())}, f, ensure_ascii=False)
             os.replace(tmp, config.SELECTION)
             return self._json({"ok": True, "groups": names})
+        if u.path == "/api/tidy/apply":
+            items = body.get("items") or []
+            if not items:
+                return self._json({"ok": False, "msg": "没有选中"}, 400)
+            try:
+                r = tidy_apply(items)
+            except BiliError as e:
+                return self._json({"ok": False, "msg": str(e)}, 400)
+            return self._json({"ok": True, **r})
         if u.path == "/api/group/apply":
             mids = body.get("mids") or []
             name = (body.get("tag") or "常看").strip()[:16]

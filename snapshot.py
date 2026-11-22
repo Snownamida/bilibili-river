@@ -39,7 +39,8 @@ def export():
 
     for name, path in (("selection.json", config.SELECTION),
                        ("groups.json", config.GROUPS_FILE),
-                       ("candidates.json", os.path.join(config.DATA, "candidates.json"))):
+                       ("candidates.json", os.path.join(config.DATA, "candidates.json")),
+                       ("tidy_proposals.json", os.path.join(config.DATA, "tidy_proposals.json"))):
         if os.path.exists(path):
             shutil.copy2(path, os.path.join(DEST, name))
 

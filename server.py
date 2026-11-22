@@ -362,10 +362,10 @@ class Handler(BaseHTTPRequestHandler):
         if u.path == "/api/tidy":
             props = tidy_data()
             grp = q.get("grp", ["all"])[0]
-            items = [p for p in props if grp == "all" or p.get("group") == grp]
+            tidy_items = [p for p in props if grp == "all" or p.get("group") == grp]
             from collections import Counter
             counts = Counter(p.get("group") for p in props)
-            return self._json({"items": items, "counts": counts,
+            return self._json({"items": tidy_items, "counts": counts,
                                "total": len(props)})
         if u.path == "/api/export":
             blob = make_export(q.get("cookie", ["0"])[0] == "1")

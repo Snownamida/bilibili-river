@@ -181,8 +181,6 @@ python3 restore.py --force     # 把 JSONL 灌回 SQLite
 | `POST /api/groups` | `{"groups": ["我追"]}` 保存勾选 |
 | `GET /api/candidates` | 常看候选 + 进度 |
 | `POST /api/candidates/run` | 重新同步历史并分析 |
-| `GET /api/export[?cookie=1]` | 下载备份 |
-| `POST /api/import` | 上传备份恢复 |
 | `POST /api/seen` | `{"bvid": "BV..."}` 或 `{"days": 7}` 全部已读 |
 | `POST /api/refresh` | 立刻抓一轮 |
 | `GET /feed.xml` | Atom，喂给 RSS 阅读器也行 |

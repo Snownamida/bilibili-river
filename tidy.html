@@ -105,7 +105,7 @@ function render(){
         <img src="${esc(x.face||"")}" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.visibility='hidden'">
       </a>
       <div class="info">
-        <div class="name">${esc(x.uname)}${low?'<span class="tag low">低置信</span>':''}
+        <div class="name">${esc(x.uname)}${(x.groups||[x.group]).map(g=>`<span class="tag">${esc(g)}</span>`).join("")}${low?'<span class="tag low">低置信</span>':''}
           <select data-mid="${x.mid}">${opts(g)}</select>
           <button class="unf" data-mid="${x.mid}" data-name="${esc(x.uname)}">取关</button></div>
         <div class="vids">${(x.videos&&x.videos.length?x.videos:[{t:x.reason||""}]).slice(0,3).map(v=>`<div class="vid"><div class="vwrap">${v.c?`<img loading="lazy" referrerpolicy="no-referrer" src="${esc(v.c)}" onerror="this.style.display='none'">`:""}${v.p!=null?`<span class="play">${fmt(v.p)}</span>`:""}</div><div class="vtitle">${esc(v.t||"")}</div></div>`).join("")}</div>

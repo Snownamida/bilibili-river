@@ -148,6 +148,8 @@ def tidy_data():
     for p in props:
         p["face"] = faces.get(p["mid"], "")
         p.setdefault("confidence", 0.9)
+        if not isinstance(p.get("groups"), list) or not p["groups"]:
+            p["groups"] = [p.get("group")] if p.get("group") else []
         try:
             vids = json.loads(tops.get(p["mid"]) or "[]")[:3]
         except Exception:
@@ -347,10 +349,19 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 path = os.path.join(config.DATA, "tidy_proposals.json")
                 props = json.load(open(path, encoding="utf-8"))
-                done = {int(it["mid"]) for it in items}
-                props = [p for p in props if p.get("mid") not in done]
+                done = {}
+                for it in items:
+                    done.setdefault(int(it["mid"]), set()).add(it["group"])
+                kept = []
+                for p in props:
+                    gs = p.get("groups") or ([p["group"]] if p.get("group") else [])
+                    gs = [g for g in gs if g not in done.get(p.get("mid"), set())]
+                    if gs:
+                        p["groups"] = gs
+                        p["group"] = gs[0]
+                        kept.append(p)
                 tmp = path + ".tmp"
-                json.dump(props, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+                json.dump(kept, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
                 os.replace(tmp, path)
             except Exception:
                 pass

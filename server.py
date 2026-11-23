@@ -152,7 +152,7 @@ def tidy_data():
             vids = json.loads(tops.get(p["mid"]) or "[]")[:3]
         except Exception:
             vids = []
-        p["videos"] = [{"t": v.get("t"), "p": v.get("p")} for v in vids]
+        p["videos"] = [{"t": v.get("t"), "p": v.get("p"), "c": v.get("c")} for v in vids]
     return props
 
 

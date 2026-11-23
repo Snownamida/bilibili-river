@@ -85,6 +85,37 @@ def fetch_profiles(limit=50):
     con.close()
     return done
 
+def refresh_top(limit=0, gap=2.0):
+    """重抓每个人的最火视频，补上封面（旧的 top_json 没存 cover）。"""
+    b = Bili(config.COOKIE)
+    con = fetch.db(); cur = con.cursor()
+    q = "SELECT mid FROM profiles ORDER BY fetched_at"
+    if limit:
+        q += f" LIMIT {int(limit)}"
+    mids = [r[0] for r in cur.execute(q)]
+    done = 0
+    for mid in mids:
+        try:
+            d = b._app_get("/x/v2/space/archive/cursor", {"vmid": mid, "ps": 8, "order": "click"})
+        except BiliError as e:
+            if e.code in (412, -352):
+                time.sleep(20)
+            continue
+        items = d.get("item") or []
+        top = [{"t": v.get("title"), "p": v.get("play"), "d": v.get("ctime"),
+                "tag": v.get("tname"), "c": (v.get("cover") or "").replace("http://", "https://")}
+               for v in items]
+        cur.execute("UPDATE profiles SET top_json=?, fetched_at=? WHERE mid=?",
+                    (json.dumps(top, ensure_ascii=False), int(time.time()), mid))
+        con.commit()
+        done += 1
+        if done % 50 == 0:
+            print("done", done, flush=True)
+        time.sleep(gap)
+    con.close()
+    return done
+
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "profiles":

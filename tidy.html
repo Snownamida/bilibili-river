@@ -32,7 +32,10 @@
   .name{font-size:14px;font-weight:600;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
   .tag{background:var(--chip);color:var(--dim);border-radius:5px;padding:1px 5px;font-size:11px;font-weight:400}
   .tag.low{color:#b26b00}
-  .sub{color:var(--dim);font-size:12px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .vids{margin-top:4px;display:flex;flex-direction:column;gap:2px}
+  .vid{display:flex;gap:8px;font-size:12px;color:var(--dim);min-width:0}
+  .vid span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .play{margin-left:auto;flex:0 0 auto;color:#8a8f98}
   select{background:var(--chip);color:var(--fg);border:0;border-radius:8px;padding:6px 8px;font-size:12px;max-width:130px}
   footer{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);
          padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center}
@@ -63,6 +66,7 @@
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+"亿" : n >= 1e4 ? (n/1e4).toFixed(1)+"万" : String(n);
 let data = {items: [], counts: {}, total: 0};
 let cur = "all";
 const selected = new Map();   // mid -> group
@@ -93,7 +97,7 @@ function render(){
       <img src="${esc(x.face||"")}" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.visibility='hidden'">
       <div class="info">
         <div class="name">${esc(x.uname)}${low?'<span class="tag low">低置信</span>':''}</div>
-        <div class="sub">${esc((x.top||[])[0]||x.reason||"")}</div>
+        <div class="vids">${(x.videos&&x.videos.length?x.videos:[{t:x.reason||""}]).map(v=>`<div class="vid"><span>${esc(v.t||"")}</span>${v.p!=null?`<span class="play">${fmt(v.p)}</span>`:""}</div>`).join("")}</div>
       </div>
       <select data-mid="${x.mid}">${opts(g)}</select>
     </div>`;

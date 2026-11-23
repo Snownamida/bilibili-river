@@ -143,10 +143,16 @@ def tidy_data():
         faces = {r[0]: r[1] for r in con.execute("SELECT mid, face FROM followings")}
     except Exception:
         faces = {}
+    tops = {r[0]: r[1] for r in con.execute("SELECT mid, top_json FROM profiles")}
     con.close()
     for p in props:
         p["face"] = faces.get(p["mid"], "")
         p.setdefault("confidence", 0.9)
+        try:
+            vids = json.loads(tops.get(p["mid"]) or "[]")[:3]
+        except Exception:
+            vids = []
+        p["videos"] = [{"t": v.get("t"), "p": v.get("p")} for v in vids]
     return props
 
 

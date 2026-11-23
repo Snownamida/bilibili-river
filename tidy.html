@@ -33,12 +33,16 @@
   .name{font-size:14px;font-weight:600;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
   .tag{background:var(--chip);color:var(--dim);border-radius:5px;padding:1px 5px;font-size:11px;font-weight:400}
   .tag.low{color:#b26b00}
-  .vids{margin-top:4px;display:flex;flex-direction:column;gap:2px}
-  .vid{display:flex;gap:8px;font-size:12px;color:var(--dim);min-width:0;align-items:center}
-  .vthumb{width:52px;height:30px;border-radius:4px;object-fit:cover;background:var(--chip);flex:0 0 auto}
-  .vid span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .play{margin-left:auto;flex:0 0 auto;color:#8a8f98}
-  select{background:var(--chip);color:var(--fg);border:0;border-radius:8px;padding:6px 8px;font-size:12px;max-width:130px}
+  .vids{margin-top:6px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .vid{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .vwrap{position:relative;border-radius:6px;overflow:hidden;background:var(--chip);aspect-ratio:16/9}
+  .vwrap img{width:100%;height:100%;object-fit:cover;display:block}
+  .vwrap .play{position:absolute;right:4px;bottom:4px;background:rgba(0,0,0,.6);color:#fff;
+               font-size:10px;line-height:1.5;padding:0 4px;border-radius:4px}
+  .vtitle{font-size:11px;line-height:1.3;color:var(--dim);overflow:hidden;display:-webkit-box;
+          -webkit-line-clamp:2;-webkit-box-orient:vertical}
+  select{background:var(--chip);color:var(--fg);border:0;border-radius:8px;padding:4px 6px;font-size:12px;
+         max-width:120px;margin-left:auto}
   footer{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);
          padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center}
   footer .n{color:var(--dim);font-size:13px;margin-right:auto}
@@ -100,10 +104,10 @@ function render(){
         <img src="${esc(x.face||"")}" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.visibility='hidden'">
       </a>
       <div class="info">
-        <div class="name">${esc(x.uname)}${low?'<span class="tag low">低置信</span>':''}</div>
-        <div class="vids">${(x.videos&&x.videos.length?x.videos:[{t:x.reason||""}]).map(v=>`<div class="vid">${v.c?`<img class="vthumb" loading="lazy" referrerpolicy="no-referrer" src="${esc(v.c)}" onerror="this.style.display='none'">`:""}<span>${esc(v.t||"")}</span>${v.p!=null?`<span class="play">${fmt(v.p)}</span>`:""}</div>`).join("")}</div>
+        <div class="name">${esc(x.uname)}${low?'<span class="tag low">低置信</span>':''}
+          <select data-mid="${x.mid}">${opts(g)}</select></div>
+        <div class="vids">${(x.videos&&x.videos.length?x.videos:[{t:x.reason||""}]).slice(0,3).map(v=>`<div class="vid"><div class="vwrap">${v.c?`<img loading="lazy" referrerpolicy="no-referrer" src="${esc(v.c)}" onerror="this.style.display='none'">`:""}${v.p!=null?`<span class="play">${fmt(v.p)}</span>`:""}</div><div class="vtitle">${esc(v.t||"")}</div></div>`).join("")}</div>
       </div>
-      <select data-mid="${x.mid}">${opts(g)}</select>
     </div>`;
   }).join("");
   $("#list").querySelectorAll("select").forEach(sel => sel.onchange = () => {

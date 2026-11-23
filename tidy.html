@@ -49,6 +49,7 @@
          padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center}
   footer .n{color:var(--dim);font-size:13px;margin-right:auto}
   .primary{background:var(--accent);color:#fff;border:0;border-radius:9px;padding:9px 14px;font-size:14px}
+  .primary.armed{background:#e5484d}
   @media (min-width:760px){body{max-width:900px;margin:0 auto}}
 </style>
 </head>
@@ -175,10 +176,25 @@ $("#all").onclick = () => {
 };
 $("#none").onclick = () => { $("#list").querySelectorAll("input").forEach(cb => cb.checked = false); selected.clear(); refreshCount(); };
 
+let applyArmed = false, applyTimer = null;
 $("#apply").onclick = async () => {
   if (!selected.size) return alert("先勾几个");
+  if (!applyArmed){
+    applyArmed = true;
+    $("#apply").textContent = `确定应用 ${selected.size} 个？`;
+    $("#apply").classList.add("armed");
+    clearTimeout(applyTimer);
+    applyTimer = setTimeout(() => {
+      applyArmed = false;
+      $("#apply").textContent = "应用选中";
+      $("#apply").classList.remove("armed");
+    }, 3000);
+    return;
+  }
+  clearTimeout(applyTimer);
+  applyArmed = false;
+  $("#apply").classList.remove("armed");
   const items = [...selected].map(([mid, group]) => ({mid, group}));
-  if (!confirm(`把 ${items.length} 个 UP 加到对应分组？只加不删。`)) return;
   $("#apply").textContent = "提交中…";
   try {
     const r = await fetch("/api/tidy/apply", {method:"POST", headers:{"Content-Type":"application/json"},
@@ -187,7 +203,7 @@ $("#apply").onclick = async () => {
     if (!d.ok) return alert(d.msg || "失败");
     alert(`已加入 ${d.moved} 个${d.created && d.created.length ? "，新建了：" + d.created.join("、") : ""}`);
     selected.clear(); load();
-  } finally { $("#apply").textContent = "应用选中"; }
+  } finally { $("#apply").textContent = "应用选中"; $("#apply").classList.remove("armed"); }
 };
 load();
 </script>

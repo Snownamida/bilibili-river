@@ -27,7 +27,8 @@
   main{padding:0 10px}
   .row{display:flex;gap:10px;align-items:flex-start;background:var(--card);border-radius:12px;padding:10px;margin-bottom:8px}
   .row input[type=checkbox]{width:20px;height:20px;margin-top:12px;accent-color:var(--accent);flex:0 0 auto}
-  .row img{width:40px;height:40px;border-radius:50%;object-fit:cover;background:var(--chip);flex:0 0 auto}
+  .avatar{flex:0 0 auto;line-height:0}
+  .row img{width:40px;height:40px;border-radius:50%;object-fit:cover;background:var(--chip)}
   .info{min-width:0;flex:1}
   .name{font-size:14px;font-weight:600;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
   .tag{background:var(--chip);color:var(--dim);border-radius:5px;padding:1px 5px;font-size:11px;font-weight:400}
@@ -94,7 +95,9 @@ function render(){
     const low = (x.confidence ?? 1) < 0.5;
     return `<div class="row" data-mid="${x.mid}">
       <input type="checkbox" ${selected.has(String(x.mid))?"checked":""}>
-      <img src="${esc(x.face||"")}" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.visibility='hidden'">
+      <a class="avatar" href="https://space.bilibili.com/${x.mid}" target="_blank" rel="noopener">
+        <img src="${esc(x.face||"")}" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.visibility='hidden'">
+      </a>
       <div class="info">
         <div class="name">${esc(x.uname)}${low?'<span class="tag low">低置信</span>':''}</div>
         <div class="vids">${(x.videos&&x.videos.length?x.videos:[{t:x.reason||""}]).map(v=>`<div class="vid"><span>${esc(v.t||"")}</span>${v.p!=null?`<span class="play">${fmt(v.p)}</span>`:""}</div>`).join("")}</div>

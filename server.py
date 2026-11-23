@@ -307,6 +307,26 @@ class Handler(BaseHTTPRequestHandler):
                 json.dump({"groups": names, "ts": int(time.time())}, f, ensure_ascii=False)
             os.replace(tmp, config.SELECTION)
             return self._json({"ok": True, "groups": names})
+        if u.path == "/api/tidy/unfollow":
+            mid = body.get("mid")
+            if not mid:
+                return self._json({"ok": False, "msg": "缺 mid"}, 400)
+            try:
+                Bili(config.COOKIE).unfollow(int(mid))
+            except BiliError as e:
+                return self._json({"ok": False, "msg": str(e)}, 400)
+            con = db()
+            con.execute("DELETE FROM all_members WHERE mid=?", (int(mid),))
+            con.commit(); con.close()
+            try:
+                props = json.load(open(os.path.join(config.DATA, "tidy_proposals.json"), encoding="utf-8"))
+                props = [p for p in props if p.get("mid") != int(mid)]
+                tmp = os.path.join(config.DATA, "tidy_proposals.json.tmp")
+                json.dump(props, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+                os.replace(tmp, os.path.join(config.DATA, "tidy_proposals.json"))
+            except Exception:
+                pass
+            return self._json({"ok": True})
         if u.path == "/api/tidy/apply":
             items = body.get("items") or []
             if not items:

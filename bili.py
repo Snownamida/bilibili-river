@@ -217,6 +217,13 @@ class Bili:
         return self._post("https://api.bilibili.com/x/relation/tag/create",
                           {"tag": name, "csrf": self.csrf})
 
+    def unfollow(self, mid):
+        """取消关注（act=2）。"""
+        if not self.csrf:
+            raise BiliError("cookie 里没有 bili_jct，不能写")
+        return self._post("https://api.bilibili.com/x/relation/modify",
+                          {"fid": mid, "act": 2, "re_src": 11, "csrf": self.csrf})
+
     def add_users(self, mids, tagids):
         """把用户加进分组（可多个），不清除已有分组；tagids=0 表示移回默认分组。"""
         if not self.csrf:

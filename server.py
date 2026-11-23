@@ -335,6 +335,25 @@ class Handler(BaseHTTPRequestHandler):
                 r = tidy_apply(items)
             except BiliError as e:
                 return self._json({"ok": False, "msg": str(e)}, 400)
+            # 应用到 B 站后，本地也从“待分类”里挪走，不用等下一次同步
+            con = db()
+            for it in items:
+                mid = int(it["mid"])
+                row = con.execute("SELECT uname FROM all_members WHERE mid=? LIMIT 1", (mid,)).fetchone()
+                con.execute("DELETE FROM all_members WHERE mid=? AND grp='默认分组'", (mid,))
+                con.execute("INSERT OR REPLACE INTO all_members(mid,grp,uname) VALUES(?,?,?)",
+                            (mid, it["group"], row[0] if row else None))
+            con.commit(); con.close()
+            try:
+                path = os.path.join(config.DATA, "tidy_proposals.json")
+                props = json.load(open(path, encoding="utf-8"))
+                done = {int(it["mid"]) for it in items}
+                props = [p for p in props if p.get("mid") not in done]
+                tmp = path + ".tmp"
+                json.dump(props, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+                os.replace(tmp, path)
+            except Exception:
+                pass
             return self._json({"ok": True, **r})
         if u.path == "/api/group/apply":
             mids = body.get("mids") or []

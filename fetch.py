@@ -266,6 +266,17 @@ def run(force=False):
         n, max_pub = row[0], row[1]
         ps = config.PS if n else config.BACKFILL_PS
         vids, err = fetch_one(b, mid, ps)
+        if vids is not None and len(vids) >= ps:
+            known = {r[0] for r in cur.execute("SELECT bvid FROM videos WHERE mid=?", (mid,))}
+            if all(v["bvid"] not in known for v in vids):
+                print(f"  mid={mid} 整页都是新的，继续往前翻", flush=True)
+                extra = b.older_videos(mid, ps=ps, pages=6)
+                seen = {v["bvid"] for v in vids}
+                for v in extra:
+                    if v["bvid"] in known or v["bvid"] in seen:
+                        break
+                    vids.append(v)
+                    seen.add(v["bvid"])
         if vids is None:
             errs.append({"where": f"mid={mid}", "msg": str(err)})
             touch_state(cur, mid, str(err))

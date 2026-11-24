@@ -291,14 +291,45 @@ class Bili:
             pass
         return self._web_videos(mid, ps)
 
-    def _web_videos(self, mid, ps=20):
+    def _web_page(self, mid, pn, ps):
         p = self._sign({
-            "mid": mid, "ps": ps, "pn": 1, "order": "pubdate",
+            "mid": mid, "ps": ps, "pn": pn, "order": "pubdate",
             "platform": "web", "web_location": 1550101, **DM_IMG,
         })
         d = self._get("https://api.bilibili.com/x/space/wbi/arc/search", p,
                       referer=f"https://space.bilibili.com/{mid}/video")
-        vlist = ((d or {}).get("list") or {}).get("vlist") or []
+        return ((d or {}).get("list") or {}).get("vlist") or []
+
+    def older_videos(self, mid, ps=20, pages=5):
+        """只有「整页都是新的」时才调用：从第 2 页往后翻，遇到已存在的就停。"""
+        out = []
+        for pn in range(2, pages + 2):
+            vlist = None
+            for attempt in range(2):
+                try:
+                    vlist = self._web_page(mid, pn, ps)
+                    break
+                except BiliError as e:
+                    if attempt == 0 and e.code in (412, -352):
+                        time.sleep(15)
+                        continue
+                    return out
+            if not vlist:
+                break
+            for v in vlist:
+                out.append({
+                    "bvid": v.get("bvid"), "aid": v.get("aid"), "mid": mid,
+                    "title": (v.get("title") or "").strip(),
+                    "pubdate": int(v.get("created") or 0),
+                    "cover": (v.get("pic") or "").replace("http://", "https://"),
+                    "duration": parse_len(v.get("length")),
+                    "tname": v.get("tname") or "",
+                })
+            time.sleep(1.5)
+        return out
+
+    def _web_videos(self, mid, ps=20):
+        vlist = self._web_page(mid, 1, ps)
         out = []
         for v in vlist:
             out.append({

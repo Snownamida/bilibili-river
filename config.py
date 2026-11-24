@@ -30,7 +30,7 @@ BATCH = 40              # 每轮最多查多少个 UP（按"最久没查"轮转�
 
 GROUPS_FILE = os.path.join(DATA, "groups.json")     # B 站分组缓存（抓取时刷新）
 SELECTION = os.path.join(DATA, "selection.json")    # 页面上勾选的分组
-FETCH_INTERVAL = 1800   # 30 分钟跑一轮
+FETCH_INTERVAL = 7200   # 2 小时一轮
 REQUEST_GAP = 5         # app 网关宽松，5 秒足够稳
 PAUSE_EVERY = 10        # 每查 10 个 UP 多歇一会儿
 PAUSE_SECONDS = 25
